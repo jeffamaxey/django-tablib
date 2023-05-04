@@ -59,14 +59,11 @@ class DatasetMetaclass(type):
         if opts.queryset is not None:
             queryset = opts.queryset
             model = queryset.model
-            new_class.queryset = queryset
-            new_class.model = model
         else:
             model = opts.model
             queryset = model.objects.all()
-            new_class.model = model
-            new_class.queryset = queryset
-
+        new_class.model = model
+        new_class.queryset = queryset
         return new_class
 
 
@@ -79,13 +76,14 @@ class ModelDataset(six.with_metaclass(DatasetMetaclass, BaseDataset)):
         if self._meta.exclude:
             included = filter(lambda x: x not in self._meta.exclude, included)
 
-        self.fields = dict((field, Field()) for field in included)
+        self.fields = {field: Field() for field in included}
 
-        self.fields.update(deepcopy(self.base_fields))
+        self.fields |= deepcopy(self.base_fields)
 
-        self.header_dict = dict(
-            (field.header or name, field.attribute or name)
-            for name, field in self.fields.items())
+        self.header_dict = {
+            field.header or name: field.attribute or name
+            for name, field in self.fields.items()
+        }
 
         self.header_list = self.header_dict.keys()
         self.attr_list = [self.header_dict[h] for h in self.header_list]

@@ -75,9 +75,5 @@ class BaseDataset(tablib.Dataset):
 
         # make sure that both row and col are in a format that can be passed
         # straight to tablib
-        if django_object is not None:
-            row = self._getattrs(django_object)
-        else:
-            row = django_object
-
+        row = django_object if django_object is None else self._getattrs(django_object)
         super(BaseDataset, self).append(row=row, col=col)
