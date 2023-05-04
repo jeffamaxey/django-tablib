@@ -47,11 +47,11 @@ class TablibAdmin(admin.ModelAdmin):
         Helper method to get model info in a form of (app_label, model_name).
         Avoid deprecation warnings and failures with different Django versions.
         """
-        if LooseVersion(django.get_version()) < LooseVersion('1.7.0'):
-            info = self.model._meta.app_label, self.model._meta.module_name
-        else:
-            info = self.model._meta.app_label, self.model._meta.model_name
-        return info
+        return (
+            (self.model._meta.app_label, self.model._meta.module_name)
+            if LooseVersion(django.get_version()) < LooseVersion('1.7.0')
+            else (self.model._meta.app_label, self.model._meta.model_name)
+        )
 
     def get_urls(self):
         from django.conf.urls import url
@@ -108,14 +108,18 @@ class TablibAdmin(admin.ModelAdmin):
 
     def changelist_view(self, request, extra_context=None):
         context = {'request': request}
-        urls = []
-        for export_format in self.formats:
-            urls.append(
-                (export_format, reverse(
+        urls = [
+            (
+                export_format,
+                reverse(
                     'admin:{0}_{1}_tablib_export'.format(*self.get_info()),
-                    kwargs={'export_format': export_format}),))
+                    kwargs={'export_format': export_format},
+                ),
+            )
+            for export_format in self.formats
+        ]
         context['urls'] = urls
-        context.update(extra_context or {})
+        context |= (extra_context or {})
 
         return super(TablibAdmin, self).changelist_view(request, context)
 
@@ -137,5 +141,5 @@ class TablibAdmin(admin.ModelAdmin):
             export_actions[action_func_name] = (action_func, action_func_name,
                                                 short_description)
         # super actions are more preferable
-        export_actions.update(actions)
+        export_actions |= actions
         return export_actions
